@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Lecture du fichier d'instance VRPLIB
-path_file_instance_vrplib = 'tests/data/A-n32-k5.vrp'
+path_file_instance_vrplib = 'tests/data/B-n31-k5.vrp'
 instance_vrplib = vrplib.read_instance(path_file_instance_vrplib)
 
 # Affichage (terminal) de l'instance VRPLIB
@@ -45,11 +45,10 @@ print(f"Dictionnaire de l'instance : {instance_vrplib.keys()}") # Pour vérifier
 """
 Génération de la solution initiale par rapport au fichier d'instance CVRP récupéré.
 Heuristique utilisé : insertion séquentielle gloutonne en fonction du coût de chaque arête
-Contrainte : capacité maximale des camions (CVRP)
+Contrainte avancé : aucun (CVRP)
 """
-# Récupération des coordonnées et de la dimension
+# Récupération des coordonnées (x,y)
 coord = instance_vrplib['node_coord']
-dimension = instance_vrplib['dimension']
 
 # Coordonnées du dépôt
 depot_index = 0 # le dépôt est à l'index 0
@@ -79,7 +78,7 @@ print(f"Charge de chaque commande : {demand}")
 
 distance = instance_vrplib['edge_weight']
 clients_remaining = list(range(len(demand) - 1)) # liste d'index de clients pas encore visité (- 1 pour l'index python)
-print(f"Clients restant : {clients_remaining}")
+print(f"Clients restant (index Python) : {clients_remaining}")
 
 initial_solution = [] # stock une ou plusieurs routes de la solution finale
 
@@ -97,10 +96,10 @@ while clients_remaining :
     print(f"Client restant choisi en premier pour la route : {client_choosed}")
 
     client_choosed_vrplib = client_choosed + 1 # pour l'index VRPLIB
-    print(f"Client restant choisi (après indexage) : {client_choosed_vrplib}")
+    print(f"Client restant choisi (index VRPLIB) : {client_choosed_vrplib}")
 
     current_route = [client_choosed_vrplib] # nouvelle route temporaire en construction
-    actual_charge = demand[client_choosed_vrplib] # initialisation de la charge d'un nouveau camion actuelle
+    actual_charge = demand[client_choosed_vrplib] # initialisation de la charge d'un nouveau camion actuel
 
     clients_remaining.remove(client_choosed)
 
@@ -149,10 +148,13 @@ while clients_remaining :
             
     initial_solution.append([0] + current_route + [0]) # ajout de la route actuelle (avec dépôt au début et à la fin du chemin) à la solution initiale
     print(f"Charge finale occupé par le camion : {actual_charge}")
-    print(f"Solution initiale actuelle (après construction de la route n°{index4}) : {initial_solution}")
+    print(f"Solution initiale actuelle après construction de la route n°{index4} (index Python) :")
+
+    for i in range (len(initial_solution)) :
+        print(f"Route n°{i + 1} : {initial_solution[i]}")
     index4 = index4 + 1
 
-print(f"Routes trouvé pour la solution initiale :")
+print(f"Routes trouvé pour la solution initiale (index VRPLIB) :")
 
 # Affichage des routes avec les indices VRPLIB
 for route_index, route in enumerate(initial_solution) :
@@ -200,6 +202,8 @@ plt.figure(figsize = (10, 8))
 plt.plot(depot_x, depot_y, 's', color = 'red', markersize = 10, label = 'Dépôt', zorder = 5)
 plt.plot(client_x, client_y, 'o', color = 'blue', markersize = 5, label = 'Clients')
 
+dimension = instance_vrplib['dimension']
+
 # Numérotation des sommets
 for i in range(dimension) :
     x, y = coord[i]
@@ -226,7 +230,7 @@ for route_index, route in enumerate(initial_solution) :
             label = f'Route {route_index + 1}') # Légende pour une route
 
 # Personnalisation des légendes
-plt.title(f"Solution de l'instance VRP : {instance_vrplib['name']} au coût totale {initial_final_cost:.0f}")
+plt.title(f"Solution de l'instance CVRP : {instance_vrplib['name']} au coût totale {initial_final_cost:.0f}")
 plt.xlabel("Coordonnée X")
 plt.ylabel("Coordonnée Y")
 plt.legend()
@@ -248,7 +252,7 @@ Lecture de la solution finale CVRP avec VRPLIB.
 Affichage au terminal.
 """
 # Lecture de la solution VRPLIB
-path_file_solution_vrplib = 'tests/data/A-n32-k5.sol'
+path_file_solution_vrplib = 'tests/data/B-n31-k5.sol'
 solution_vrplib = vrplib.read_solution(path_file_solution_vrplib)
 
 # Afichage (terminal) de la solution VRPLIB
@@ -259,28 +263,25 @@ print("---------------------------------")
 final_solution = solution_vrplib['routes']
 
 final_solution_with_added_depot_python = [] # pour stocker les routes avec les vrais indices Python + dépot
-final_solution_with_added_depot_vrplib = [] # pour stocker les routes avec les vrais indices VRPLIB + dépot
 
-print(f"Solution finale actuelle : {final_solution}")
-print(f"Routes trouvé pour la solution finale :")
+print(f"Solution finale actuelle (index Python) :")
+
+for i in range (len(final_solution)) :
+    print(f"Route n°{i + 1} : {final_solution[i]}")
+
+print(f"Solution finale actuelle avec dépôt ajouté (index Python) :")
 
 # Affichage des routes avec les indices VRPLIB
 for route_index, route in enumerate(final_solution) :
 
     # Avec index Python
-    route_corrected_python = [client_index + 0 for client_index in route] # pour l'index Python
+    route_corrected_python = [client_index for client_index in route] # pour l'index Python
     route_with_added_depot_python = [0] + route_corrected_python + [0] # ajout du dépôt au début et à la fin
     final_solution_with_added_depot_python.append(route_with_added_depot_python)
-    
-    # Avec index VRPLIB
-    route_corrected_vrplib = [client_index + 1 for client_index in route] # pour l'index VRPLIB
-    route_with_added_depot_vrplib = [1] + route_corrected_vrplib + [1] # ajout du dépôt au début et à la fin
-    final_solution_with_added_depot_vrplib.append(route_with_added_depot_vrplib)
-    print(f"Route n°{route_index + 1}: {route_with_added_depot_vrplib}")
 
+for i in range (len(final_solution_with_added_depot_python)) :
+    print(f"Routes n°{i + 1}: {final_solution_with_added_depot_python[i]}")
 print(f"Dictionnaire de la solution : {solution_vrplib.keys()}") # pour vérifier la" structure du dictionnaire
-print(f"Routes standard : {final_solution_with_added_depot_python}")
-print(f"Routes corrigé : {final_solution_with_added_depot_vrplib}")
 
 # Calcul du coût total de la solution finale
 final_final_cost = 0.0 # coût total de la solution finale
@@ -298,7 +299,7 @@ for route in final_solution_with_added_depot_python :
         start_node_index = route[i] # sommet de départ (i)
         end_node_index = route[i + 1] # sommet d'arrivée (j)
         vertice_cost = distance[start_node_index, end_node_index] # coût direct entre les deux sommets
-        route_cost = route_cost+ vertice_cost
+        route_cost = route_cost + vertice_cost
 
     final_final_cost = final_final_cost + route_cost
     
@@ -306,6 +307,11 @@ for route in final_solution_with_added_depot_python :
     index6 = index6 + 1
 
 print(f"Coût total de la solution finale : {final_final_cost:.0f}")
+
+# Calcul de l'écart entre le coût de la solution finale et la solution la plus optimal
+true_final_cost = solution_vrplib['cost']
+cost_gap = abs(((true_final_cost - final_final_cost) / final_final_cost) * 100)
+print(f"Écart de coût entre la solution finale trouvé et celle qui est la plus optimisé : {cost_gap:.0f} %")
 
 # Calcul du CO2 émis
 final_CO2_g_per_km = 900 # gramme de CO2 par km
@@ -318,7 +324,6 @@ print(f"Total de CO2 (en kg) émis pour la solution finale : {final_total_CO2_em
 """
 Affichage graphique de la solution CVRP.
 """
-
 # Affichage graphique des coordonnées du dépôt et des clients
 plt.figure(figsize = (10, 8))
 plt.plot(depot_x, depot_y, 's', color = 'red', markersize = 10, label = 'Dépôt', zorder = 5)
@@ -351,7 +356,7 @@ for route_index, route in enumerate(solution_vrplib['routes']):
             label = f'Route {route_index + 1}') # Légende pour une route
 
 # Personnalisation des légendes
-plt.title(f"Solution de l'instance VRP : {instance_vrplib['name']} au coût totale {solution_vrplib['cost']}")
+plt.title(f"Solution de l'instance CVRP : {instance_vrplib['name']} au coût totale {solution_vrplib['cost']}")
 plt.xlabel("Coordonnée X")
 plt.ylabel("Coordonnée Y")
 plt.legend()
