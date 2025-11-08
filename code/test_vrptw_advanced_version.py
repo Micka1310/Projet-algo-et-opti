@@ -52,7 +52,6 @@ Génération de la solution initiale par rapport au fichier d'instance VRPTW ré
 Heuristique utilisé : insertion séquentielle gloutonne en fonction du coût de chaque arête
 Contrainte avancé : Fenêtre temporelle (VRPTW)
 """
-
 # Récupération des coordonnées (x,y)
 coord = instance_vrplib['node_coord']
 
