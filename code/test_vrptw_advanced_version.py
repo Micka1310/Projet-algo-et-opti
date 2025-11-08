@@ -381,9 +381,8 @@ print(f"Total de CO2 (en kg) émis pour la solution finale : {final_total_CO2_em
 
 
 """
-Affichage graphique de la solution CVRP.
+Affichage graphique de la solution VRPTW.
 """
-
 # Affichage graphique des coordonnées du dépôt et des clients
 plt.figure(figsize = (10, 8))
 plt.plot(depot_x, depot_y, 's', color = 'red', markersize = 10, label = 'Dépôt', zorder = 5)
