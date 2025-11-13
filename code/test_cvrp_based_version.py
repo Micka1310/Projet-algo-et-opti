@@ -5,9 +5,10 @@ Affichage au terminal.
 import vrplib
 import matplotlib.pyplot as plt
 import numpy as np
+import time  # <-- ajouté pour mesurer le temps d'exécution
 
 # Lecture du fichier d'instance VRPLIB
-path_file_instance_vrplib = 'tests/data/B-n31-k5.vrp'
+path_file_instance_vrplib = 'tests/data/A-n32-k5.vrp'
 instance_vrplib = vrplib.read_instance(path_file_instance_vrplib)
 
 # Affichage (terminal) de l'instance VRPLIB
@@ -241,18 +242,294 @@ plt.show()
 
 """
 Génération de la solution finale optimisé de la solution initiale CVRP.
-Algorithme utilisé : !!! à remplir (Mickaël) !!!
+Algorithme utilisé : Recuit simulé
 """
-# !!! Implémentez chacun vos algorithmes ici mes chères collègues :-) (Mickaël) !!!
+# ==============================================================
+# OPTIMISATION DU CVRP PAR RECUIT SIMULÉ (avec contrainte de capacité)
+# ==============================================================
+# Objectif :
+#    Minimiser la distance totale parcourue par les camions tout en respectant
+#    la capacité maximale de chaque véhicule (ex: 100 unités de charge).
+# Méthode :
+#    Recuit simulé = algorithme stochastique inspiré du processus physique de refroidissement du métal.
+# ==============================================================
 
+print("\n------------------------------------------")
+print("| Optimisation CVRP par Recuit Simulé    |")
+print("------------------------------------------")
 
+# === Chargement des données de l'instance ===
+matrice_distance = np.array(instance_vrplib['edge_weight'], dtype=float)  # Matrice des distances entre les nœuds
+capacite_camion = instance_vrplib['capacity']                 # Capacité maximale par camion
+demandes_clients = np.array(demand, dtype=float)              # Demande de chaque client
+
+print(f"Capacité d’un camion : {capacite_camion:.0f}")
+print(f"Nombre de routes initiales : {len(initial_solution)}")
+
+# === Préparation de la solution initiale ===
+# Chaque tournée doit commencer et se terminer au dépôt (nœud 0)
+routes_actuelles = [route[:] for route in initial_solution]
+for route in routes_actuelles:
+    if route[0] != 0:
+        route.insert(0, 0)
+    if route[-1] != 0:
+        route.append(0)
+
+meilleures_routes = [r[:] for r in routes_actuelles]  # Copie initiale de la meilleure solution
+
+# ==============================================================
+# FONCTIONS UTILITAIRES
+# ==============================================================
+
+def cout_total(routes: list) -> float:
+    """Calcule la somme des distances totales de toutes les routes."""
+    cout = 0.0
+    for route in routes:
+        for i in range(len(route) - 1):
+            cout += matrice_distance[route[i], route[i + 1]]
+    return float(cout)
+
+def charge_route(route: list) -> float:
+    """Calcule la charge totale (demande cumulée) d’une route, en ignorant le dépôt."""
+    return float(sum(demandes_clients[n] for n in route if n != 0))
+
+def charges_toutes_routes(routes: list) -> list:
+    """Retourne la liste des charges pour chaque route."""
+    return [charge_route(r) for r in routes]
+
+def respect_capacite(routes: list) -> bool:
+    """Vérifie que chaque route respecte la capacité maximale du camion."""
+    for route in routes:
+        if charge_route(route) > capacite_camion + 1e-9:
+            return False
+    return True
+
+# ==============================================================
+# Initialisation du coût et des charges
+# ==============================================================
+
+cout_actuel = cout_total(routes_actuelles)
+meilleur_cout = cout_actuel
+charges_actuelles = charges_toutes_routes(routes_actuelles)
+meilleures_charges = charges_actuelles[:]
+
+print("\n=== Vérification des charges initiales ===")
+for i, (route, charge) in enumerate(zip(routes_actuelles, charges_actuelles), start=1):
+    depassement = "  Dépasse la capacité !" if charge > capacite_camion else ""
+    print(f"Camion {i:02d} | Charge = {charge:7.2f} / {capacite_camion:7.2f} | Clients = {len(route)-2}{depassement}")
+print("==========================================\n")
+
+# ==============================================================
+# PARAMÈTRES DU RECUIT SIMULÉ
+# ==============================================================
+
+generateur_aleatoire = np.random.default_rng(42)
+temperature = max(1.0, 0.10 * cout_actuel)  # Température initiale (10% du coût)
+facteur_refroidissement = 0.9995    # Facteur de refroidissement
+temperature_minimale = 1e-3         # Température minimale (critère d’arrêt)
+nombre_max_iterations = 20000       # Nombre maximal d’itérations
+
+print(f"Coût initial : {cout_actuel:.0f} | Température initiale = {temperature:.2f}")
+
+# ==============================================================
+# BOUCLE PRINCIPALE DU RECUIT SIMULÉ
+# ==============================================================
+
+iteration = 0
+start_time = time.perf_counter()  # début de la mesure du temps du recuit simulé
+
+while iteration < nombre_max_iterations and temperature > temperature_minimale:
+    iteration += 1
+
+    # Création d’une solution voisine (copie des routes actuelles)
+    routes_candidats = [r[:] for r in routes_actuelles]
+    charges_candidats = charges_actuelles[:]
+    mouvement_effectue = False
+
+    # Choix aléatoire du type de mouvement (0 = 2-opt, 1 = relocalisation, 2 = échange)
+    type_mouvement = int(generateur_aleatoire.integers(0, 3))
+
+    # 2-opt (inversion d’un segment de la même route) 
+    if type_mouvement == 0:
+        routes_possibles = [idx for idx, r in enumerate(routes_candidats) if len(r) > 4]
+        if routes_possibles:
+            r_idx = int(generateur_aleatoire.choice(routes_possibles))
+            route = routes_candidats[r_idx]
+            i = int(generateur_aleatoire.integers(1, len(route) - 2))
+            j = int(generateur_aleatoire.integers(i + 1, len(route) - 1))
+            route[i:j] = route[i:j][::-1]
+            mouvement_effectue = True
+
+    #  MOUVEMENT 2 : Relocalisation (déplacer un client vers une autre route) 
+    if not mouvement_effectue and type_mouvement == 1:
+        sources = [idx for idx, r in enumerate(routes_candidats) if len(r) > 3]
+        if sources:
+            s = int(generateur_aleatoire.choice(sources))
+            route_source = routes_candidats[s]
+            i = int(generateur_aleatoire.integers(1, len(route_source) - 1))
+            client = route_source[i]
+            demande_client = demandes_clients[client]
+
+            # Retrait du client
+            route_source.pop(i)
+            charges_candidats[s] -= demande_client
+
+            # Suppression de la route vide
+            source_supprimee = False
+            if len(route_source) <= 2:
+                del routes_candidats[s]
+                del charges_candidats[s]
+                source_supprimee = True
+
+            # Choix d’une route de destination
+            d = int(generateur_aleatoire.integers(0, len(routes_candidats)))
+            if d < len(routes_candidats):
+                route_dest = routes_candidats[d]
+                position_insertion = int(generateur_aleatoire.integers(1, len(route_dest)))
+                if charges_candidats[d] + demande_client <= capacite_camion:
+                    route_dest.insert(position_insertion, client)
+                    charges_candidats[d] += demande_client
+                    mouvement_effectue = True
+                else:
+                    # Restauration si dépassement
+                    if source_supprimee:
+                        routes_candidats.insert(s, [0, client, 0])
+                        charges_candidats.insert(s, demande_client)
+                    else:
+                        route_source.insert(i, client)
+                        charges_candidats[s] += demande_client
+            else:
+                # Création d’une nouvelle route si possible
+                if demande_client <= capacite_camion:
+                    routes_candidats.append([0, client, 0])
+                    charges_candidats.append(demande_client)
+                    mouvement_effectue = True
+                else:
+                    if source_supprimee:
+                        routes_candidats.insert(s, [0, client, 0])
+                        charges_candidats.insert(s, demande_client)
+                    else:
+                        route_source.insert(i, client)
+                        charges_candidats[s] += demande_client
+
+    # Échange de clients entre deux routes
+    if not mouvement_effectue and type_mouvement == 2:
+        routes_possibles = [idx for idx, r in enumerate(routes_candidats) if len(r) > 3]
+        if len(routes_possibles) >= 2:
+            r1, r2 = generateur_aleatoire.choice(routes_possibles, 2, replace=False)
+            route1, route2 = routes_candidats[r1], routes_candidats[r2]
+            i = int(generateur_aleatoire.integers(1, len(route1) - 1))
+            j = int(generateur_aleatoire.integers(1, len(route2) - 1))
+            a, b = route1[i], route2[j]
+            da, db = demandes_clients[a], demandes_clients[b]
+            nouvelle_charge1 = charges_candidats[r1] - da + db
+            nouvelle_charge2 = charges_candidats[r2] - db + da
+            if nouvelle_charge1 <= capacite_camion and nouvelle_charge2 <= capacite_camion:
+                route1[i], route2[j] = b, a
+                charges_candidats[r1] = nouvelle_charge1
+                charges_candidats[r2] = nouvelle_charge2
+                mouvement_effectue = True
+
+    #  Si aucun mouvement valide, on continue avec refroidissement 
+    if not mouvement_effectue:
+        temperature = max(temperature * facteur_refroidissement, temperature_minimale)
+        continue
+
+    # Vérification de la contrainte de capacité
+    if not respect_capacite(routes_candidats):
+        temperature = max(temperature * facteur_refroidissement, temperature_minimale)
+        continue
+
+    # Calcul du coût de la nouvelle solution
+    cout_candidat = cout_total(routes_candidats)
+    variation_cout = cout_candidat - cout_actuel
+
+    #  Critère d'acceptation du recuit simulé
+    accepte = (variation_cout < 0) or (generateur_aleatoire.random() < np.exp(-variation_cout / temperature))
+    if accepte:
+        routes_actuelles = [r[:] for r in routes_candidats]
+        cout_actuel = cout_candidat
+        charges_actuelles = charges_candidats[:]
+
+        print(f"\n[itération {iteration}] Solution acceptée | coût = {cout_actuel:.0f} | T = {temperature:.6f}")
+        for k, (r, c) in enumerate(zip(routes_actuelles, charges_actuelles), start=1):
+            depassement = "  Dépasse capacité !" if c > capacite_camion else ""
+            print(f"   Camion {k:02d} | Charge = {c:7.2f} / {capacite_camion:7.2f} | Clients = {len(r)-2}{depassement}")
+        print("-----------------------------------------------------")
+
+        # Mise à jour de la meilleure solution
+        if cout_candidat < meilleur_cout:
+            meilleures_routes = [r[:] for r in routes_candidats]
+            meilleur_cout = cout_candidat
+            meilleures_charges = charges_candidats[:]
+
+    # Refroidissement progressif
+    temperature = max(temperature * facteur_refroidissement, temperature_minimale)
+
+end_time = time.perf_counter()           # fin de la mesure
+elapsed = end_time - start_time          # temps d'exécution du recuit simulé en secondes
+
+# ==============================================================
+# AFFICHAGE FINAL
+# ==============================================================
+
+print("\n=== Meilleure solution trouvée ===")
+for k, (r, c) in enumerate(zip(meilleures_routes, meilleures_charges), start=1):
+    depassement = "  Dépasse capacité !" if c > capacite_camion else ""
+    print(f"Camion {k:02d} | Charge finale = {c:.2f} / {capacite_camion} | Clients = {len(r)-2} | Route = {r}{depassement}")
+print("====================================================\n")
+
+print(f"Meilleur coût rencontré : {meilleur_cout:.0f}")
+print(f"Temps d'exécution du recuit simulé : {elapsed:.2f} secondes")
+
+# Calcul des émissions de CO2
+co2_g_par_km = 900.0
+co2_total_kg = (meilleur_cout * co2_g_par_km) / 1000.0
+print(f"Total CO2 émis : {co2_total_kg:.2f} kg")
+
+# ==============================================================
+# VISUALISATION GRAPHIQUE DES ROUTES
+# ==============================================================
+
+plt.figure(figsize=(10, 8))
+plt.plot(depot_x, depot_y, 's', color='red', markersize=10, label='Dépôt', zorder=5)
+plt.plot(client_x, client_y, 'o', color='blue', markersize=5, label='Clients')
+
+# Affichage du numéro des clients
+for i in range(dimension):
+    x, y = coord[i]
+    plt.text(x + 1, y + 1, str(i + 1), fontsize=8)
+
+# Couleurs différentes pour chaque route
+couleurs = plt.colormaps.get_cmap('hsv')
+indices = np.linspace(0, 1, len(meilleures_routes) + 1)
+couleurs_routes = couleurs(indices)
+
+# Tracé de chaque route finale
+for r_index, route in enumerate(meilleures_routes):
+    x_points = [coord[node][0] for node in route]
+    y_points = [coord[node][1] for node in route]
+    plt.plot(x_points, y_points,
+             color=couleurs_routes[r_index],
+             linestyle='-',
+             linewidth=2,
+             alpha=0.8,
+             label=f'Route {r_index + 1}')
+
+plt.title(f"Recuit simulé : coût = {meilleur_cout:.0f}")
+plt.xlabel("Coordonnée X")
+plt.ylabel("Coordonnée Y")
+plt.legend()
+plt.axis('equal')
+plt.show()
 
 """
 Lecture de la solution finale CVRP avec VRPLIB.
 Affichage au terminal.
 """
+
 # Lecture de la solution VRPLIB
-path_file_solution_vrplib = 'tests/data/B-n31-k5.sol'
+path_file_solution_vrplib = 'tests/data/A-n32-k5.sol'
 solution_vrplib = vrplib.read_solution(path_file_solution_vrplib)
 
 # Afichage (terminal) de la solution VRPLIB
@@ -260,7 +537,7 @@ print("---------------------------------")
 print("| Affichage de la solution CVRP |")
 print("---------------------------------")
 
-final_solution = solution_vrplib['routes']
+final_solution = routes_actuelles
 
 final_solution_with_added_depot_python = [] # pour stocker les routes avec les vrais indices Python + dépot
 
@@ -311,7 +588,7 @@ print(f"Coût total de la solution finale : {final_final_cost:.0f}")
 # Calcul de l'écart entre le coût de la solution finale et la solution la plus optimal
 true_final_cost = solution_vrplib['cost']
 cost_gap = abs(((true_final_cost - final_final_cost) / final_final_cost) * 100)
-print(f"Écart de coût entre la solution finale trouvé et celle qui est la plus optimisé : {cost_gap:.0f} %")
+print(f"Écart de coût entre la solution finale trouvé et celle qui est la plus optimisé : {cost_gap:.2f} %")
 
 # Calcul du CO2 émis
 final_CO2_g_per_km = 900 # gramme de CO2 par km
@@ -321,9 +598,10 @@ print(f"Total de CO2 (en kg) émis pour la solution finale : {final_total_CO2_em
 
 
 
-"""
+""""
 Affichage graphique de la solution CVRP.
 """
+
 # Affichage graphique des coordonnées du dépôt et des clients
 plt.figure(figsize = (10, 8))
 plt.plot(depot_x, depot_y, 's', color = 'red', markersize = 10, label = 'Dépôt', zorder = 5)
