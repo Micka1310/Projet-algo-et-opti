@@ -1,0 +1,9 @@
+# Dépendances principales
+numpy>=1.21.0
+matplotlib>=3.5.0
+
+# Bibliothèque VRP locale (incluse dans le projet)
+# vrplib - bibliothèque locale pour la lecture/écriture des instances VRP
+
+# Dépendances pour les tests (optionnel)
+pytest>=7.0.0

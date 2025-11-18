@@ -1,0 +1,24 @@
+[
+  {
+    "timestamp": "2025-11-12T10:52:18.327389",
+    "instance": "C201",
+    "algorithm": "ALNS",
+    "initial_cost": 639.4557888309974,
+    "final_cost": 580.9948850689581,
+    "improvement": 9.142290175981202,
+    "time_seconds": 60.04187297821045,
+    "num_routes": 3,
+    "gap_vs_optimal": 1.3758470431237402
+  },
+  {
+    "timestamp": "2025-11-12T13:11:52.407833",
+    "instance": "C201",
+    "algorithm": "ALNS",
+    "initial_cost": 639.4557888309974,
+    "final_cost": 580.9948850689581,
+    "improvement": 9.142290175981202,
+    "time_seconds": 60.19073939323425,
+    "num_routes": 3,
+    "gap_vs_optimal": 1.3758470431237402
+  }
+]

@@ -1,0 +1,160 @@
+# ============================================================================
+# ADEME - VRP Optimization Project
+# Requirements File
+# ============================================================================
+#
+# Installation:
+#   pip install -r requirements.txt
+#
+# Pour créer un environnement virtuel (recommandé):
+#   python -m venv venv
+#   venv\Scripts\activate (Windows)
+#   source venv/bin/activate (Linux/Mac)
+#   pip install -r requirements.txt
+# ============================================================================
+
+# ============================================================================
+# Core Dependencies - Interface Web
+# ============================================================================
+
+# Streamlit - Framework d'interface web interactive
+streamlit>=1.28.0
+
+# ============================================================================
+# Scientific Computing & Numerical Libraries
+# ============================================================================
+
+# NumPy - Calculs numériques et tableaux
+numpy>=1.24.0
+
+# SciPy - Algorithmes scientifiques avancés (matrices de distance, optimisation)
+scipy>=1.10.0
+
+# Pandas - Manipulation de données tabulaires
+pandas>=2.0.0
+
+# ============================================================================
+# Visualization Libraries
+# ============================================================================
+
+# Matplotlib - Visualisations graphiques 2D
+matplotlib>=3.7.0
+
+# NetworkX - Manipulation et visualisation de graphes
+networkx>=3.1
+
+# Plotly - Visualisations interactives (optionnel, pour graphiques avancés)
+plotly>=5.14.0
+
+# Seaborn - Visualisations statistiques avancées (optionnel)
+seaborn>=0.12.0
+
+# ============================================================================
+# VRP/VRPTW Specific Libraries
+# ============================================================================
+
+# VRPLib - Parsing d'instances VRP standard (format VRPLIB)
+vrplib>=1.0.1
+
+# ============================================================================
+# Data Processing & I/O
+# ============================================================================
+
+# Pillow - Traitement d'images (pour logos et exports d'images)
+Pillow>=10.0.0
+
+# openpyxl - Lecture/écriture de fichiers Excel (pour export de résultats)
+openpyxl>=3.1.0
+
+# ============================================================================
+# Utility Libraries
+# ============================================================================
+
+# python-dateutil - Manipulation de dates
+python-dateutil>=2.8.0
+
+# pytz - Gestion des fuseaux horaires
+pytz>=2023.3
+
+# ============================================================================
+# Development & Testing (Optional)
+# ============================================================================
+
+# pytest - Framework de tests unitaires
+pytest>=7.4.0
+
+# pytest-cov - Couverture de code pour les tests
+pytest-cov>=4.1.0
+
+# black - Formatage automatique du code Python
+black>=23.0.0
+
+# flake8 - Linter pour vérifier la qualité du code
+flake8>=6.0.0
+
+# mypy - Vérification de types statiques
+mypy>=1.5.0
+
+# ============================================================================
+# Performance & Optimization (Optional)
+# ============================================================================
+
+# numba - JIT compiler pour accélérer NumPy
+numba>=0.57.0
+
+# ============================================================================
+# Additional Tools
+# ============================================================================
+
+# tqdm - Barres de progression élégantes
+tqdm>=4.65.0
+
+# colorama - Couleurs dans le terminal (pour logs)
+colorama>=0.4.6
+
+# ============================================================================
+# Version Constraints Summary
+# ============================================================================
+#
+# Minimum Python Version: 3.8
+# Recommended Python Version: 3.10 or higher
+#
+# Tested on:
+# - Python 3.8.x
+# - Python 3.9.x
+# - Python 3.10.x
+# - Python 3.11.x
+# - Python 3.12.x
+# - Python 3.13.x
+#
+# Platform Support:
+# - Windows 10/11
+# - Linux (Ubuntu 20.04+, Debian, Fedora)
+# - macOS (10.15+)
+# ============================================================================
+
+# ============================================================================
+# Notes
+# ============================================================================
+#
+# 1. Pour installer uniquement les dépendances essentielles:
+#    pip install streamlit numpy scipy pandas matplotlib networkx vrplib
+#
+# 2. Pour mettre à jour toutes les dépendances:
+#    pip install --upgrade -r requirements.txt
+#
+# 3. Pour générer votre propre requirements.txt avec versions exactes:
+#    pip freeze > requirements-lock.txt
+#
+# 4. Pour vérifier les packages installés:
+#    pip list
+#
+# 5. Tailles approximatives d'installation:
+#    - Dépendances essentielles: ~500 MB
+#    - Toutes les dépendances: ~800 MB
+#
+# 6. Temps d'installation estimé:
+#    - Connexion rapide: 2-5 minutes
+#    - Connexion moyenne: 5-10 minutes
+#
+# ============================================================================
